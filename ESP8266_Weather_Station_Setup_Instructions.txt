@@ -1,0 +1,130 @@
+# ESP8266 Weather Station Setup Instructions
+
+## Overview
+This document provides instructions for setting up your ESP8266 weather station to communicate with the web dashboard.
+
+## 1. Hardware Requirements
+- ESP8266 microcontroller (NodeMCU or similar)
+- DHT11 temperature and humidity sensor
+- BMP180 pressure and temperature sensor
+- SH1106 OLED display (optional but recommended)
+- Breadboard and jumper wires
+
+## 2. Wiring Instructions
+- Connect DHT11 data pin to D5 (GPIO14) on ESP8266
+- Connect I2C devices (BMP180 and OLED):
+  - SDA to D2 on ESP8266
+  - SCL to D1 on ESP8266
+- Power all sensors with 3.3V from ESP8266
+
+## 3. Software Setup
+
+### Arduino IDE Setup
+1. Install the Arduino IDE if you haven't already
+2. Install ESP8266 board support: 
+   - Go to File > Preferences
+   - Add this URL to Additional Boards Manager URLs: http://arduino.esp8266.com/stable/package_esp8266com_index.json
+   - Go to Tools > Board > Boards Manager
+   - Search for "esp8266" and install the package
+3. Install required libraries via Library Manager (Tools > Manage Libraries):
+   - ESP8266WiFi
+   - ESP8266HTTPClient
+   - ArduinoJson (version 6.x)
+   - Adafruit Unified Sensor
+   - Adafruit BMP085 Library
+   - Adafruit SH110X
+   - DHT sensor library
+
+### Code Modifications
+1. Open the provided `esp8266-weather-station.ino` file in Arduino IDE
+2. Update the following values in the code:
+
+```cpp
+// === WiFi configuration ===
+const char* ssid = "YOUR_WIFI_SSID";     // Replace with your WiFi network name
+const char* password = "YOUR_WIFI_PASSWORD"; // Replace with your WiFi password
+
+// === Server configuration ===
+const char* serverUrl = "http://YOUR_SERVER_URL:5000/api/weather"; // Replace with your server URL
+
+// === Device information ===
+const char* deviceId = "ESP8266-WS001";  // You can keep this or change to a unique identifier
+```
+
+## 4. Finding Your Server URL
+
+Your server URL will depend on how you deploy your application:
+
+### For Local Development (same network as ESP8266)
+1. Find your computer's IP address on your local network:
+   - On Windows: Open Command Prompt and type `ipconfig`
+   - On macOS/Linux: Open Terminal and type `ifconfig` or `ip addr`
+2. Use this IP address in your ESP8266 code:
+   ```cpp
+   const char* serverUrl = "http://192.168.1.100:5000/api/weather"; // Replace 192.168.1.100 with your computer's IP
+   ```
+
+### For Deployed Web Application (Internet accessible)
+1. When you deploy your application on Replit, you'll get a URL like:
+   `https://your-project-name.username.repl.co`
+2. Use this URL in your ESP8266 code:
+   ```cpp
+   const char* serverUrl = "https://your-project-name.username.repl.co/api/weather";
+   ```
+
+### Additional Notes on URLs
+- The ESP8266 will need to be able to connect to this URL, so make sure:
+  - If local, both devices are on the same network
+  - If deployed, your ESP8266 has internet access
+- The URL must include the full path to the API endpoint (`/api/weather`)
+- If using HTTPS, you may need to add SSL certificate fingerprints to your ESP8266 code
+
+## 5. Uploading Code to ESP8266
+1. Connect your ESP8266 to your computer via USB
+2. Select the correct board and port in Arduino IDE:
+   - Tools > Board > ESP8266 Boards > NodeMCU 1.0
+   - Tools > Port > (select the COM port connected to your ESP8266)
+3. Click the Upload button (right arrow icon)
+4. Wait for the upload to complete
+
+## 6. Testing & Monitoring
+1. Open the Serial Monitor (Tools > Serial Monitor) and set the baud rate to 115200
+2. You should see initialization messages and data transmission attempts
+3. Check the OLED display if connected - it should show sensor readings and WiFi status
+4. If the ESP8266 successfully connects to WiFi and sends data, you should see:
+   - "Data sent successfully!" on the OLED
+   - HTTP response code 201 in the Serial Monitor
+
+## 7. Viewing Data on the Dashboard
+1. Access your web dashboard:
+   - Local: http://localhost:5000
+   - Deployed: https://your-project-name.username.repl.co
+2. The dashboard will automatically update every 30 seconds with new data from your ESP8266
+
+## 8. Troubleshooting
+- If the ESP8266 cannot connect to WiFi, check your SSID and password
+- If data isn't being sent, verify the server URL is correct and accessible
+- Check the Serial Monitor for error messages
+- Ensure the API endpoint is correctly configured on the server
+- Make sure sensor wiring is correct
+
+## 9. Data Format
+The ESP8266 sends data in the following JSON format:
+```json
+{
+  "device_id": "ESP8266-WS001",
+  "temperature_dht": 25.6,
+  "humidity": 65.3,
+  "temperature_bmp": 25.2,
+  "pressure": 1013.25,
+  "signal_strength": -67,
+  "uptime": "2 hours, 30 minutes"
+}
+```
+
+## 10. Power Considerations
+- For a permanent setup, consider powering the ESP8266 with a stable 5V power supply
+- USB power banks can be used for temporary deployments
+- For long-term outdoor installations, consider adding a weatherproof enclosure
+
+If you encounter any issues, check the serial output for error messages and ensure all components are properly connected and functioning.

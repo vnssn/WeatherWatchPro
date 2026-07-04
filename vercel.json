@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build:client",
+  "installCommand": "npm ci",
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "buildCommand": "npm run build:client",
+        "outputDirectory": "dist/public"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/test",
+      "dest": "/api/test.js"
+    },
+    {
+      "src": "/api/weather/current",
+      "dest": "/api/weather/current.js"
+    },
+    {
+      "src": "/api/weather/history",
+      "dest": "/api/weather/history.js"
+    },
+    {
+      "src": "/api/weather",
+      "dest": "/api/weather.js"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+} 

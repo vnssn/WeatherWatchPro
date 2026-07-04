@@ -1,0 +1,105 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP085_U.h>
+#include <Adafruit_SH110X.h>
+#include <DHT.h>
+
+// === Pin configuration ===
+#define DHTPIN D5        // GPIO14 on ESP8266
+#define DHTTYPE DHT11
+#define OLED_I2C_ADDRESS 0x3C  // Most SH1106 OLEDs use 0x3C
+
+// === Sensor objects ===
+DHT dht(DHTPIN, DHTTYPE);
+Adafruit_BMP085_Unified bmp = Adafruit_BMP085_Unified(10085);
+Adafruit_SH1106G display = Adafruit_SH1106G(128, 64, &Wire, -1);  // -1 means no reset pin
+
+bool bmp_available = false;
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);  // Let Serial stabilize
+
+  // Initialize I2C with custom pins (D2 = SDA, D1 = SCL)
+  Wire.begin(D2, D1);
+  delay(100);  // Let I2C stabilize
+
+  // === Initialize OLED Display ===
+  if (!display.begin(OLED_I2C_ADDRESS, true)) {
+    Serial.println("OLED initialization failed. Check wiring and address!");
+    while (1);  // Halt
+  }
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SH110X_WHITE);
+  display.setCursor(0, 0);
+  display.println("Starting...");
+  display.display();
+  delay(1000);
+
+  // === Initialize DHT Sensor ===
+  dht.begin();
+
+  // === Initialize BMP180 Sensor ===
+  if (!bmp.begin()) {
+    bmp_available = false;
+    Serial.println("BMP180 not found.");
+  } else {
+    bmp_available = true;
+    Serial.println("BMP180 initialized.");
+  }
+}
+
+void loop() {
+  // Read DHT11 values
+  float humidity = dht.readHumidity();
+  float temp_dht = dht.readTemperature();
+
+  // Initialize BMP180 values
+  float temp_bmp = NAN;
+  float pressure = NAN;
+
+  if (bmp_available) {
+    sensors_event_t event;
+    bmp.getEvent(&event);
+    if (!isnan(event.pressure)) {
+      pressure = event.pressure;
+      bmp.getTemperature(&temp_bmp);
+    } else {
+      Serial.println("Failed to read pressure from BMP180.");
+    }
+  }
+
+  // Display data
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Weather Station:");
+
+  display.print("Temp (DHT): ");
+  display.print(temp_dht);
+  display.println(" C");
+
+  display.print("Humidity: ");
+  display.print(humidity);
+  display.println(" %");
+
+  if (!isnan(temp_bmp)) {
+    display.print("Temp (BMP): ");
+    display.print(temp_bmp);
+    display.println(" C");
+  } else {
+    display.println("BMP Temp: N/A");
+  }
+
+  if (!isnan(pressure)) {
+    display.print("Pressure: ");
+    display.print(pressure);
+    display.println(" hPa");
+  } else {
+    display.println("Pressure: N/A");
+  }
+
+  display.display();
+  delay(2000);
+}
